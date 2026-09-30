@@ -21,6 +21,11 @@ export const metadata: Metadata = {
     template: `%s | ${siteCopy.name}`,
   },
   description: siteCopy.description,
+  openGraph: {
+    locale: "fa_IR",
+    type: "website",
+    siteName: siteCopy.name,
+  },
 };
 
 export default function RootLayout({

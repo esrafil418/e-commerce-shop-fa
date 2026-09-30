@@ -1,6 +1,6 @@
 # 10. Catalog
 
-Status: architectural baseline. Catalog tables and pages are planned in Phases 2, 4, and 5.
+Status: storefront read path is implemented. Shopper routes render published catalog data when the catalog tables exist, and an empty state when they do not. Catalog migrations and seed data are still the database phase.
 
 ## Purpose
 
@@ -22,7 +22,7 @@ Define how products, categories, brands, variants, attributes, and merchandising
 
 **Listing.** A category or search result: cards, filters, sort, pagination.
 
-**PDP.** Product detail page at `/p/[slug]`.
+**PDP.** Product detail page at `/products/[slug]`.
 
 **Availability.** At least one active variant with `on_hand - reserved > 0`. The card shows unavailable when none qualify. The exact number is optional on the card; the PDP can show "موجود" / "ناموجود" and a low-stock phrase when available is below a setting (default 3) without giving away a warehouse report.
 
@@ -43,11 +43,26 @@ Define how products, categories, brands, variants, attributes, and merchandising
 
 ```text
 /                       home sections
-/c/[slug]               category listing, includes descendants via ltree
-/p/[slug]               product
-/search                 q + filters
-/compare                up to 4 slugs
+/products               published listing
+/products/[slug]        product
+/categories             category index
+/categories/[slug]      category listing, includes descendants via ltree path
+/brands/[slug]          brand listing
+/search                 q + filters, noindex
+/compare                up to 4 slugs, noindex
 ```
+
+The earlier `/c/[slug]` and `/p/[slug]` shorthand is not used. Slugs stay Latin.
+
+### Data access
+
+`features/catalog/data/catalog-store.ts` reads the documented tables through the Supabase server client: published products, active variants, primary image, brands, categories, banners, and homepage sections. Listing filters (sort, toman price bounds, brand, in-stock, page) are applied in that server module after a bounded candidate query. The page size is 24 and the candidate cap is 500 until a SQL listing view exists.
+
+Prices, discounts, and stock on the card come from that payload. `compare_at_price_rial` is display-only. The payable total is not computed in the browser.
+
+If Supabase is not configured, or the catalog relations are missing, loaders return `status: "unavailable"`. The UI shows that state. It does not substitute fixture products. A published slug that is absent calls `notFound()`.
+
+Popular products fall back to publication date (the slice after featured) until order-item counts exist. Featured products prefer `homepage_sections.kind = featured` and `config.product_slugs`.
 
 ### Listing query
 
@@ -85,12 +100,16 @@ Catalog managers create the graph described here. Validation: unique slug, at le
 
 ```text
 apps/web/src/features/catalog/
-apps/web/src/features/categories/
 apps/web/src/features/search/
-apps/web/src/app/(store)/c/[slug]/page.tsx
-apps/web/src/app/(store)/p/[slug]/page.tsx
+apps/web/src/app/(store)/products/page.tsx
+apps/web/src/app/(store)/products/[slug]/page.tsx
+apps/web/src/app/(store)/categories/page.tsx
+apps/web/src/app/(store)/categories/[slug]/page.tsx
+apps/web/src/app/(store)/brands/[slug]/page.tsx
 apps/web/src/app/(store)/search/page.tsx
 apps/web/src/app/(store)/compare/page.tsx
+apps/web/src/app/sitemap.ts
+apps/web/src/app/robots.ts
 packages/validation/src/catalog-params.ts
 supabase/migrations/*_catalog.sql
 supabase/seed/

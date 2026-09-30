@@ -1,6 +1,6 @@
 # 16. SEO
 
-Status: architectural baseline. Metadata is implemented with the storefront pages, not before them.
+Status: public storefront routes emit Persian metadata, canonical URLs, and Open Graph tags. Product pages add Product JSON-LD. `app/sitemap.ts` and `app/robots.ts` are in place.
 
 ## Purpose
 
@@ -32,11 +32,13 @@ Define how public pages describe themselves to browsers, link previews, and sear
 
 | Page | Index | Title pattern |
 | --- | --- | --- |
-| Home | yes | Site name from settings |
+| Home | yes | Site name |
+| `/products` | yes, unfiltered | کالاها |
 | Category | yes, unfiltered | `{name_fa} \| {site}` |
+| Brand | yes, unfiltered | `{name_fa} \| {site}` |
 | Product | yes | `{name_fa} \| {site}` |
-| Search | no | Search |
-| Cart, checkout, account, auth, admin | no | Section name |
+| Search | no | جستجو |
+| Cart, checkout, compare, wishlist, orders, profile, auth, admin | no | Section name |
 
 `generateMetadata` reads the product or category on the server. Missing products call `notFound()`.
 
@@ -58,9 +60,10 @@ Metadata and JSON-LD are rendered on the server so the HTML response contains th
 apps/web/src/app/layout.tsx
 apps/web/src/app/robots.ts
 apps/web/src/app/sitemap.ts
-apps/web/src/app/(store)/p/[slug]/page.tsx
-apps/web/src/app/(store)/c/[slug]/page.tsx
-apps/web/src/features/catalog/seo/product-json-ld.tsx
+apps/web/src/app/(store)/products/[slug]/page.tsx
+apps/web/src/app/(store)/categories/[slug]/page.tsx
+apps/web/src/lib/seo/site.ts
+apps/web/src/features/catalog/seo/product-json-ld.ts
 ```
 
 ## Environment variables

@@ -10,6 +10,7 @@ export default function NotFound() {
       <EmptyState
         action={<Button nativeButton={false} render={<Link href="/" />}>{siteCopy.backHome}</Button>}
         description={siteCopy.notFoundBody}
+        heading="h1"
         title={siteCopy.notFoundTitle}
       />
     </StoreShell>

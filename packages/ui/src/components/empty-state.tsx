@@ -6,6 +6,7 @@ type EmptyStateProps = {
   description?: string;
   action?: ReactNode;
   className?: string;
+  heading?: "h1" | "h2";
 };
 
 export function EmptyState({
@@ -13,7 +14,9 @@ export function EmptyState({
   description,
   action,
   className,
+  heading = "h2",
 }: EmptyStateProps) {
+  const Title = heading;
   return (
     <div
       className={cn(
@@ -21,7 +24,7 @@ export function EmptyState({
         className,
       )}
     >
-      <h2 className="text-lg font-semibold">{title}</h2>
+      <Title className="text-lg font-semibold">{title}</Title>
       {description ? (
         <p className="max-w-prose text-sm text-muted-foreground">{description}</p>
       ) : null}

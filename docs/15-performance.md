@@ -1,6 +1,6 @@
 # 15. Performance
 
-Status: architectural baseline. Measure after there is a UI. Do not add caches, queues, or CDNs beyond Next.js and Cloudinary until a number says to.
+Status: the storefront follows the budgets below. Public HTML is server-rendered. A tagged Next.js cache is not enabled yet, because catalog reads still go through the cookie-bearing Supabase client and must not be shared across users. `lib/cache/tags.ts` names the tags for a later anonymous catalog client.
 
 ## Purpose
 
@@ -34,8 +34,11 @@ Specific millisecond SLOs can be added after the first Lighthouse or Vercel spee
 
 ## Implementation details
 
-- Route-level `loading.tsx` skeletons reserve roughly the same boxes as the loaded UI to reduce layout shift.
-- Product cards set image width and height from `product_media` or from the preset aspect ratio.
+- Route-level `loading.tsx` skeletons reserve roughly the same boxes as the loaded UI to reduce layout shift. The store loading state uses the product-card skeleton.
+- Product cards request a width-limited Cloudinary URL (`f_auto`, `w_640`) when a cloud name and public id exist. Without a cloud name the card shows a text placeholder instead of an original upload.
+- Listing search applies on submit. Header autocomplete calls `/api/search/suggest` after a short pause and does not write the URL on each keystroke.
+- Framer Motion is limited to a short page fade, the cart count, and the product gallery. It checks `prefers-reduced-motion`. Cards are not animated.
+- The storefront does not import an admin table library.
 - `next/font` with `display: "swap"` so Persian text does not block rendering indefinitely.
 - Lucide icons are imported per icon, not as the whole pack (the package already supports path imports; follow its current import style).
 - Heavy admin dependencies (TanStack Table) are imported from admin routes only, so the storefront bundle does not include them. Check with the Next.js bundle analyzer when admin exists. Add `@next/bundle-analyzer` only for that investigation, not as a permanent runtime dependency.

@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
+import { PageTransition } from "@/components/page-transition";
 import { siteCopy } from "@/messages/fa";
+
+const container = "mx-auto w-full max-w-7xl px-4";
 
 export function StoreShell({ children }: { children: ReactNode }) {
   return (
@@ -13,8 +16,8 @@ export function StoreShell({ children }: { children: ReactNode }) {
         {siteCopy.skipToContent}
       </a>
       <Header />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8" id="main">
-        {children}
+      <main className={`${container} flex-1 py-6 md:py-8`} id="main">
+        <PageTransition>{children}</PageTransition>
       </main>
       <Footer />
     </>

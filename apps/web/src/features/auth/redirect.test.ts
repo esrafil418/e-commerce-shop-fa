@@ -19,10 +19,13 @@ describe("sanitizeRedirectPath", () => {
 });
 
 describe("requiresSession", () => {
-  it("protects account and admin pages only", () => {
+  it("protects account, profile, and admin pages", () => {
     expect(requiresSession("/account")).toBe(true);
+    expect(requiresSession("/profile")).toBe(true);
+    expect(requiresSession("/profile/orders")).toBe(true);
     expect(requiresSession("/admin/products")).toBe(true);
     expect(requiresSession("/auth/login")).toBe(false);
+    expect(requiresSession("/cart")).toBe(false);
     expect(requiresSession("/api/admin/permissions")).toBe(false);
   });
 });
