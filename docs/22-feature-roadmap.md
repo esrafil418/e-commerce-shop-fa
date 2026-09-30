@@ -1,6 +1,6 @@
 # 22. Feature roadmap
 
-Status: the implementation plan. Phase 0 has not started. Documentation in this repository is the only completed work.
+Status: Phase 0 and the storefront shell from Phase 1 are implemented locally. CI has not been run on GitHub. Phase 2 (Supabase) has not started.
 
 ## Purpose
 
@@ -47,6 +47,8 @@ The phases are the body of this document.
 
 **Tests.** One Vitest test that asserts `format` is not required yet: a pure function `add(1, 1)` is unnecessary. Test that a Zod schema in `packages/validation` rejects an empty email string instead. That proves the workspace link.
 
+**Done in the foundation pass.** Workspace, Next.js 16 app, ESLint, Prettier, strict TypeScript, Vitest, `.env.example`, gitignore, and the CI workflow file. `packages/validation` rejects an empty email. Supabase was not initialized. CI has not been executed on GitHub.
+
 **Acceptance criteria.**
 
 - `pnpm install`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm --filter web build` succeed.
@@ -79,6 +81,8 @@ The phases are the body of this document.
 - RTL render test or Playwright smoke: `document.documentElement.lang === "fa"` and `dir === "rtl"`.
 - Component test: theme toggle changes the `class` on `html` without throwing.
 - Logger redaction unit test.
+
+**Done in the foundation pass.** RTL root layout, Vazirmatn, theme, toaster, NuqsAdapter, QueryClient, header, footer, mobile sheet, homepage skeleton, loading/error/not-found, redacting logger, and the shadcn primitives listed in [03-project-structure.md](03-project-structure.md). Vitest covers the homepage placeholder, the theme toggle, parser-adjacent money formatting, and logger redaction. Playwright is not installed, so there is no browser check for horizontal scroll or dialog focus.
 
 **Acceptance criteria.**
 

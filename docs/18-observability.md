@@ -1,6 +1,6 @@
 # 18. Observability
 
-Status: architectural baseline. The first implementation is structured logs and error boundaries. A vendor SDK is added only when someone will actually read it.
+Status: the logger, request id, and error boundaries exist. No vendor SDK. `GET /api/health` does not query the database yet.
 
 ## Purpose
 

@@ -1,6 +1,6 @@
 # 08. State management
 
-Status: architectural baseline. No stores are implemented yet.
+Status: the boundaries below are in code. Only the shell uses them. There is no cart, catalog cache, or form state yet.
 
 ## Purpose
 
@@ -23,7 +23,7 @@ State is split by **who is allowed to be right**.
 
 Recorded in [adr/0003-state-management.md](adr/0003-state-management.md).
 
-The URL is read on the server from `searchParams` and on the client with nuqs. They must use the same parameter names, defined once in `packages/validation` or `features/search/params.ts`.
+The URL is read on the server from `searchParams` and on the client with nuqs. Parameter names and allowed sort values live in `packages/validation`. Parsers live in `apps/web/src/lib/search-params.ts`.
 
 ## Important concepts
 
@@ -35,7 +35,24 @@ The URL is read on the server from `searchParams` and on the client with nuqs. T
 
 **Optimistic update.** Allowed when a failed request can roll back without the user acting on a lie about money. Wishlist hearts and "mark notification read" qualify. Checkout totals do not.
 
-## Implementation details
+## What is implemented
+
+| Kind | Where | What it holds today |
+| --- | --- | --- |
+| URL | `apps/web/src/lib/search-params.ts` and `components/search-form.tsx` | `q`, plus parsers for `sort` and `page`. The homepage reads `q` on the server and shows an empty state. The search box writes `q` with `useQueryState`. |
+| TanStack Query | `apps/web/src/client/query-provider.tsx` | A `QueryClient` with `staleTime` 30 seconds, `retry` 1, `refetchOnWindowFocus` false. No queries. |
+| Zustand | `apps/web/src/hooks/use-shell-ui.ts` | `mobileNavOpen` and `cartDrawerOpen`. The mobile sheet uses the first flag. Nothing opens the cart drawer yet. Not persisted. |
+| Theme | `apps/web/src/client/providers.tsx` | `next-themes` with `attribute="class"`. |
+| Toasts | same providers file | sonner `Toaster`, `dir="rtl"`, `position="top-center"`. No feature calls it yet. |
+| Component state | theme toggle, dialogs | Local. |
+
+`NuqsAdapter` comes from `nuqs/adapters/next/app` and wraps the tree in `apps/web/src/client/providers.tsx`.
+
+The `nuqs` package entry is a Client Component module. Importing parsers from it inside a module that a Server Component evaluates makes `withDefault` fail at build time. Parsers are imported from `nuqs/server`. `useQueryState` is imported from `nuqs` only inside `"use client"` files. Any component that calls it sits under a `<Suspense>` boundary (`components/header.tsx`) so static pages such as `/_not-found` can prerender.
+
+Do not add cart lines, prices, session, or roles to `useShellUi`. A second Zustand store needs a reason in the pull request. Compare selection stays in the URL.
+
+## Rules that still apply
 
 ### URL parameters
 
@@ -54,7 +71,7 @@ Catalog and search:
 
 Compare: repeated `p` on `/compare`, at most four product slugs. The page fetches those products on the server. A fifth value is dropped with a visible message.
 
-nuqs setup: wrap the tree in `NuqsAdapter` from `nuqs/adapters/next/app`. Parsers live next to the feature. Invalid values fall back to defaults (`page` minimum 1, unknown `sort` becomes `newest`).
+nuqs setup: wrap the tree in `NuqsAdapter` from `nuqs/adapters/next/app`. Parsers for a feature stay next to that feature once the feature exists. Invalid values fall back to defaults (`page` minimum 1, unknown `sort` becomes `newest`).
 
 Do not duplicate these filters into Zustand "so the sidebar feels faster". nuqs already updates the URL. The server render is the result.
 
@@ -90,7 +107,7 @@ Optimistic updates: wishlist and notification read state. On error, roll back an
 
 ### Zustand
 
-One store, `useUiStore`, in `apps/web/src/components/ui-store.ts` (client):
+The store is `useShellUi` in `apps/web/src/hooks/use-shell-ui.ts`:
 
 ```text
 cartDrawerOpen: boolean
@@ -119,14 +136,15 @@ A second store needs a reason written in the pull request. Compare selection is 
 ## Relevant file paths
 
 ```text
-apps/web/src/app/providers.tsx
-apps/web/src/components/ui-store.ts
-apps/web/src/features/search/params.ts
-apps/web/src/features/cart/ui/
-apps/web/src/features/checkout/ui/CheckoutForm.tsx
+apps/web/src/client/providers.tsx
+apps/web/src/client/query-provider.tsx
+apps/web/src/hooks/use-shell-ui.ts
+apps/web/src/lib/search-params.ts
+apps/web/src/components/search-form.tsx
 packages/validation/src/catalog-params.ts
-packages/validation/src/cart.ts
 ```
+
+Later, when those features exist: `features/cart/ui/`, `features/checkout/ui/CheckoutForm.tsx`, `packages/validation/src/cart.ts`.
 
 ## Environment variables
 

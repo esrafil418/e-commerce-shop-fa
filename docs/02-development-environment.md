@@ -1,6 +1,6 @@
 # 02. Development environment
 
-Status: architectural baseline. The tools below are the intended setup. They are not installed in this repository yet.
+Status: the workspace, Next.js app, lint, typecheck, Vitest, and env validation are installed. Supabase CLI, Docker, and Playwright are not.
 
 ## Purpose
 
@@ -9,7 +9,7 @@ Describe how a developer runs the storefront locally, which tools are required, 
 ## Architecture decisions
 
 - **pnpm workspaces** manage `apps/*` and `packages/*`. One lockfile at the repo root.
-- **Node.js 22 LTS** is the runtime for local development and CI. Use the current 22.x when scaffolding and record it in `package.json` `engines` and in `.nvmrc`.
+- **Node.js 22** is the CI runtime (`.nvmrc` is `22`, `engines.node` is `>=22`). Local machines may be newer.
 - **Supabase CLI** runs Postgres, Auth, and Studio locally. Day-to-day development does not use the hosted project.
 - **Env files:** `apps/web/.env.example` is committed with empty values. `apps/web/.env.local` is gitignored. Never commit secrets.
 - **OS.** The repo is developed on Windows as well as other systems. Scripts use pnpm, not bash-only syntax, except where the Supabase CLI already abstracts it.
@@ -28,28 +28,29 @@ Describe how a developer runs the storefront locally, which tools are required, 
 
 ### Prerequisites
 
-- Node.js 22 LTS
-- pnpm 10 (or the current pnpm 10.x at Phase 0; enable via Corepack)
+- Node.js 22 or newer
+- pnpm 11.17.0 (`packageManager` in the root `package.json`; enable via Corepack)
 - Docker Desktop, required by the Supabase local stack
 - Supabase CLI
 - Git
 - A Cloudinary account when media work starts (Phase 10). Catalog pages can render with placeholder `public_id`s until then.
 
-### Intended root scripts
+### Root scripts
 
 | Script | Action |
 | --- | --- |
 | `pnpm dev` | `pnpm --filter web dev` |
 | `pnpm build` | `pnpm --filter web build` |
-| `pnpm lint` | lint all packages |
-| `pnpm typecheck` | `tsc --noEmit` in web and packages |
-| `pnpm test` | Vitest |
-| `pnpm test:e2e` | Playwright |
+| `pnpm lint` | `pnpm --filter web lint` |
+| `pnpm typecheck` | `next typegen` then `tsc --noEmit` in packages that define the script |
+| `pnpm test` | Vitest in packages that define the script |
+| `pnpm format` / `pnpm format:check` | Prettier |
 | `pnpm supabase:start` | `supabase start` |
 | `pnpm supabase:stop` | `supabase stop` |
 | `pnpm supabase:reset` | `supabase db reset` |
 | `pnpm supabase:types` | generate `packages/types/src/database.ts` |
-| `pnpm format` | Prettier |
+
+Playwright and `pnpm test:e2e` are not installed. `supabase:*` scripts exist and fail until the CLI and `supabase/` are added in Phase 2.
 
 ### Environment file
 
@@ -68,7 +69,11 @@ CLOUDINARY_API_SECRET=
 
 Local Supabase keys change when the local project is recreated. Hosted keys differ per environment (preview vs production). Vercel preview deployments get preview Supabase credentials, not production.
 
-### Git ignore (create in Phase 0)
+Public variables are validated in `apps/web/src/lib/env/public.ts` with Zod. They may be imported from client or server code. Secrets are validated in `apps/web/src/lib/env/server.ts`, which imports `server-only`. A missing secret does not fail boot. The first feature that needs one calls `requireServerEnv(key)`, which throws a message pointing at `.env.local` and refuses a `NEXT_PUBLIC_` name. A publishable key that contains `service_role` is rejected. `NEXT_PUBLIC_SITE_URL` must not have a trailing slash. `VERCEL_ENV=production` with a localhost site URL throws.
+
+`LOG_LEVEL` is read by the logger (`info` by default). It is not part of the public schema.
+
+### Git ignore
 
 ```text
 node_modules/

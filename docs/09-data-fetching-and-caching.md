@@ -1,6 +1,6 @@
 # 09. Data fetching and caching
 
-Status: architectural baseline. Caching behavior starts when the app is scaffolded. Next.js 16 cache APIs must be checked against the installed version's docs before use. This document names the intended APIs and the rule if a name has changed: keep the policy, update the call.
+Status: the fetch policy below is unchanged. The shell does not load commerce data, so there are no cache tags and no TanStack Query calls yet. Next.js 16.3.7 is installed. Check its cache docs before the first catalog query. If a function name differs, keep the policy and update the call.
 
 ## Purpose
 
@@ -27,7 +27,15 @@ Next.js 16 documents Cache Components, `use cache`, `updateTag()`, `refresh()`, 
 
 **Request-scoped Supabase client.** Created per request with that request's cookies. Do not cache the client across requests.
 
-## Implementation details
+## What is implemented
+
+- The homepage is a Server Component. It awaits `searchParams` and calls `readCatalogQuery`. A non-empty `q` renders an empty state that says the catalog is not connected. There is no `useEffect` fetch and no product query.
+- Because the page reads `searchParams`, `/` is dynamic. `/_not-found` is static. `GET /api/health` returns `{ ok: true }` and logs `health.ok`. It does not query PostgreSQL.
+- TanStack Query is mounted for later client interactions. Defaults in `query-provider.tsx`: `staleTime: 30_000`, `retry: 1`, `refetchOnWindowFocus: false`. A new client is created per server render. The browser keeps one client.
+- `loading.tsx` on the store route group renders `LoadingState`. `error.tsx` renders `ErrorState` and a retry button. `not-found.tsx` renders `EmptyState`.
+- `lib/cache/tags.ts` does not exist. Do not call `use cache`, `updateTag`, or `revalidateTag` until a catalog loader needs them and the installed Next.js docs are checked.
+
+## Rules that still apply
 
 ### When to fetch where
 
@@ -85,14 +93,15 @@ Search params are the page source (nuqs), so the server and the client agree.
 ## Relevant file paths
 
 ```text
-apps/web/src/lib/cache/tags.ts
-apps/web/src/lib/supabase/server.ts
+apps/web/src/app/(store)/page.tsx
 apps/web/src/app/(store)/loading.tsx
-apps/web/src/app/(store)/p/[slug]/page.tsx
-apps/web/src/features/catalog/queries/
-apps/web/src/features/cart/queries/
-apps/web/src/app/providers.tsx
+apps/web/src/app/(store)/error.tsx
+apps/web/src/app/api/health/route.ts
+apps/web/src/client/query-provider.tsx
+apps/web/src/lib/search-params.ts
 ```
+
+Add `apps/web/src/lib/cache/tags.ts` with the first cached catalog query. Supabase server client and feature query folders do not exist yet.
 
 ## Environment variables
 

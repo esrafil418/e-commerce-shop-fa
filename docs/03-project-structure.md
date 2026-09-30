@@ -1,6 +1,6 @@
 # 03. Project structure
 
-Status: architectural baseline. This tree is the target. Only `docs/`, `README.md`, and `ARCHITECTURE.md` exist today.
+Status: the workspace and storefront shell exist. The tree below is the target. Empty feature folders are still not created.
 
 ## Purpose
 
@@ -23,7 +23,41 @@ Fix the directory layout so features do not collapse into global `components`, `
 
 **Server and client split.** Data-access files start with `import "server-only"`. Interactive files start with `"use client"`. A file should not do both.
 
-## Implementation details
+## What is on disk
+
+```text
+apps/web/src/
+  app/layout.tsx                 # html lang=fa dir=rtl, font, providers
+  app/(store)/                   # header, main, footer, home, loading, error
+  app/not-found.tsx
+  app/global-error.tsx
+  app/api/health/route.ts        # { ok: true }; does not query Postgres
+  app/globals.css                # imports the UI package stylesheet
+  proxy.ts                       # sets x-request-id
+  client/providers.tsx           # theme, nuqs, query, tooltip, toaster
+  components/                    # header, footer, search, mobile nav, theme
+  features/.gitkeep              # no feature modules yet
+  hooks/use-shell-ui.ts
+  lib/env/                       # public vs server validation
+  lib/currency/                  # re-exports @ecom/ui money helpers
+  lib/observability/             # redacting logger, request id
+  lib/search-params.ts           # catalog parsers from nuqs/server
+  messages/fa.ts
+  server/logger.ts               # server-only
+  types/result.ts
+packages/ui/                     # Tailwind theme, shadcn primitives, money
+packages/validation/             # email/password and catalog query schemas
+packages/types/                  # placeholder Database type
+packages/config/                 # shared tsconfig
+```
+
+Package scope is `@ecom/*`. The app package name is `web`. CSS for Tailwind 4 lives in `packages/ui/src/styles/globals.css` and `@source`s both the UI package and `apps/web/src`, otherwise utility classes used only in the app are dropped.
+
+shadcn style is `base-nova`. Primitives use `@base-ui/react`. Class names are merged with the `cn` package (`import { cn } from "cn"`), not a local `clsx` + `tailwind-merge` file. Storefront code imports primitives from `@ecom/ui/components/*`.
+
+Money formatting lives in `packages/ui/src/lib/money.ts` (`RIALS_PER_TOMAN = 10`, `formatMoney` in fa-IR) and is re-exported from `apps/web/src/lib/currency` so the app does not format amounts a second way.
+
+## Target layout
 
 ```text
 e-commerce-shop-fa/

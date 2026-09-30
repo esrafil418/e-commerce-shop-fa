@@ -1,6 +1,6 @@
 # 01. Architecture
 
-Status: architectural baseline. Paths are intended locations. Application code is not written yet.
+Status: boundaries below still apply. The running app is the shell only: routes, providers, env validation, and logging. Feature modules and Supabase clients are not written yet.
 
 ## Purpose
 

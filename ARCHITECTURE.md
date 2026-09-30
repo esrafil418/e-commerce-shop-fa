@@ -1,6 +1,6 @@
 # Architecture
 
-Status: baseline for an empty repository. No application code exists yet. Paths below are the intended layout. The long form is [docs/01-architecture.md](docs/01-architecture.md).
+Status: the storefront shell exists in `apps/web`. Supabase, Cloudinary, and feature modules are not connected. Paths below mix what is on disk with the intended layout. The long form is [docs/01-architecture.md](docs/01-architecture.md).
 
 ## System
 

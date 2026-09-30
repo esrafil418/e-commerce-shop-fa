@@ -1,6 +1,6 @@
 # 00. Overview
 
-Status: architectural baseline. The application described here is not implemented yet.
+Status: the engineering foundation is implemented. Catalog, cart, checkout, auth, and admin are not.
 
 ## Purpose
 
@@ -33,7 +33,7 @@ This document says what the platform is, who it is for, and which decisions are 
 
 The platform has to be large enough to show mid-level and senior full-stack work: real schema, RLS, transactional checkout, admin CRUD, tests, and deployment. It does not need a distributed system to show that.
 
-Phase 0 scaffolds the workspace. Phase 1 makes an RTL shell. Catalog, cart, checkout, and admin follow in that order because each one depends on the previous data model. See the roadmap for acceptance criteria.
+Phase 0 and the storefront shell from Phase 1 are on disk. Catalog, cart, checkout, and admin follow in that order because each one depends on the previous data model. See the roadmap for acceptance criteria.
 
 Out of scope until a later explicit decision:
 
@@ -55,7 +55,7 @@ Out of scope until a later explicit decision:
 | [22-feature-roadmap.md](22-feature-roadmap.md) | Phases |
 | [adr/](adr/) | Decision records |
 
-No application paths exist on disk yet.
+Application code lives under `apps/web` and `packages/`. Feature folders for catalog, cart, and the rest are not created yet. See [03-project-structure.md](03-project-structure.md).
 
 ## Environment variables
 

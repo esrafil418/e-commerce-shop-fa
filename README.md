@@ -2,7 +2,7 @@
 
 Persian-first e-commerce platform. One Next.js application serves the storefront and the admin dashboard. PostgreSQL on Supabase is the system of record. Cloudinary stores and delivers media.
 
-This repository currently holds the architecture baseline. The application has not been scaffolded yet. Implementation follows [docs/22-feature-roadmap.md](docs/22-feature-roadmap.md).
+The engineering foundation is in place: a pnpm workspace, a Next.js 16 storefront shell, the design system, and the state-library boundaries. Commerce data, Supabase, and Cloudinary are not connected. Implementation continues from [docs/22-feature-roadmap.md](docs/22-feature-roadmap.md) at Phase 2.
 
 The storefront is inspired by the functional breadth of large Iranian marketplaces. It does not copy their UI, branding, text, assets, or proprietary implementation. The visible site name is a setting, defaulting to «فروشگاه», until a real brand is chosen.
 
@@ -10,7 +10,7 @@ Engineering documents are in English. Storefront and admin copy is Persian.
 
 ## Feature list
 
-Planned scope. Nothing below is implemented yet.
+Planned scope. The shell, design system, and quality utilities exist. None of the commerce features below are implemented yet.
 
 **Customers.** Registration, login, logout, password recovery, email verification, profile, addresses, wishlist, comparison, cart, browsing, search, filtering, sorting, variants, galleries, specifications, inventory availability, discounts, coupons, reviews, ratings, questions and answers, order history, order details, tracking, cancellation, returns and refunds, notifications, saved searches, recently viewed products.
 
@@ -58,27 +58,26 @@ Detail: [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/01-architecture.md](docs/01
 | Quality | ESLint, Prettier, strict TypeScript, GitHub Actions |
 | Deploy | Vercel, Supabase, Cloudinary |
 
-Versions move. When a phase installs a package, install the current stable release in that major line and commit the lockfile. As of 2026-09-30, Next.js 16 LTS is the target line (16.3.6 was the last confirmed release; a 16.3.7 security release was scheduled for the same day). On Next.js 16 the session refresher is `src/proxy.ts`, not `middleware.ts`.
+Installed on 2026-09-30, from the lockfile: Next.js 16.3.7, React 19.2.8, Tailwind CSS 4, shadcn/ui style `base-nova` (Base UI), Zod 4, TanStack Query 5, Zustand 5, nuqs 2.10.1, Vitest 3. Package manager is pnpm 11.17.0. Node engines are `>=22`; CI uses Node 22. On Next.js 16 the request boundary is `apps/web/src/proxy.ts`, not `middleware.ts`. It currently sets `x-request-id` only. Supabase session refresh is not wired.
+
+Motion, React Hook Form, TanStack Table, date-fns, `@supabase/ssr`, Cloudinary, and Playwright are named for later phases and are not installed.
 
 ## Local setup
-
-These commands are the intended workflow. They fail until Phase 0 creates the workspace.
 
 ```bash
 pnpm install
 cp apps/web/.env.example apps/web/.env.local
-pnpm supabase:start
-pnpm supabase:reset
-pnpm supabase:types
-pnpm --filter web dev
+pnpm dev
 ```
 
-The web app is planned to listen on `http://localhost:3000`.
+The storefront listens on `http://localhost:3000`. Public env values are optional for this shell: an empty `NEXT_PUBLIC_SITE_URL` falls back to `http://localhost:3000`. Server secrets stay unset until a feature calls `requireServerEnv`.
+
+`pnpm supabase:start`, `pnpm supabase:reset`, and `pnpm supabase:types` need the Supabase CLI and `supabase init`. Neither is done yet. Do not run them against a hosted project.
 
 ## Supabase setup
 
 1. Install the Supabase CLI.
-2. `supabase init` is done in Phase 0 under `supabase/`.
+2. `supabase init` is Phase 2 work under `supabase/`. It is not done.
 3. Local stack: `pnpm supabase:start`.
 4. Migrations live in `supabase/migrations/`. Seed data lives in `supabase/seed/`.
 5. Generate types into `packages/types`.
@@ -141,12 +140,13 @@ Schema design: [docs/04-database.md](docs/04-database.md).
 ## Test commands
 
 ```bash
-pnpm --filter web test
-pnpm --filter web test:watch
+pnpm test
 pnpm --filter web typecheck
-pnpm --filter web lint
-pnpm --filter web exec playwright test
+pnpm lint
+pnpm --filter web build
 ```
+
+`pnpm typecheck` runs `next typegen` before `tsc` so route types exist without a prior production build. Playwright is not installed. There is no `test:e2e` script.
 
 Strategy: [docs/14-testing.md](docs/14-testing.md).
 
@@ -165,7 +165,7 @@ See [docs/19-deployment.md](docs/19-deployment.md) and [docs/17-ci-cd.md](docs/1
 
 ## Screenshots and demo
 
-No UI exists yet, so there are no screenshots. When the storefront is usable, add images under `docs/screenshots/` and link them here. Until then, the roadmap acceptance criteria are the demo checklist.
+The homepage is a placeholder: header, search box, theme toggle, footer, and empty product slots. There is no catalog to screenshot. When the storefront shows real products, add images under `docs/screenshots/` and link them here.
 
 ## Documentation
 
