@@ -1,21 +1,8 @@
-import { NextResponse } from "next/server";
+import { refreshSession } from "@/lib/supabase/proxy";
 import type { NextRequest } from "next/server";
-import {
-  createRequestId,
-  REQUEST_ID_HEADER,
-} from "@/lib/observability/request-id";
 
-export function proxy(request: NextRequest) {
-  const requestId =
-    request.headers.get(REQUEST_ID_HEADER) ?? createRequestId();
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set(REQUEST_ID_HEADER, requestId);
-
-  const response = NextResponse.next({
-    request: { headers: requestHeaders },
-  });
-  response.headers.set(REQUEST_ID_HEADER, requestId);
-  return response;
+export async function proxy(request: NextRequest) {
+  return refreshSession(request);
 }
 
 export const config = {

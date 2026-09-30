@@ -1,10 +1,26 @@
 # 06. Authorization and security
 
-Status: architectural baseline. Controls described here are requirements for the implementation phases, not code that already runs.
+Status: the application checks below are implemented. RLS for profiles and roles is in the identity migration. Catalog, cart, and order policies arrive with those tables.
 
 ## Purpose
 
 Draw the trust boundary and list the controls that keep prices, inventory, roles, and orders server-owned.
+
+## What is implemented
+
+Permissions are a fixed map from role to permission in `apps/web/src/features/auth/permissions.ts`. `admin` receives every permission in `permissionsForRoles` only. Call sites use `canManageProducts` and the other helpers, which call `hasPermission` and do not compare role strings.
+
+The same map is repeated in `private.has_permission`. `private.has_role` treats `admin` as every staff role, so policies do not repeat `or is admin`. `roles.manage` is the exception that asks for the `admin` role itself.
+
+`user_roles` has no insert or delete policy. A trigger rejects writes unless the transaction set `app.role_write`. Only `grant_role`, `revoke_role`, and the signup trigger set that flag. `grant_role` checks `roles.manage` for `auth.uid()` before writing, then inserts `audit_logs`. A profile update schema is `.strict()` and the action rejects `role` before it touches the database. The updated row id is the session user id. A different `userId` returns forbidden.
+
+Checkout is not implemented. `decideCheckoutIntent` is the gate later order code must call: it requires a verified email, ignores a client `userId`, and rejects `price`, `total`, `totalRial`, `discount`, and `shippingPrice`.
+
+Rate limiting is an interface in `apps/web/src/lib/rate-limit`. Login, registration, and password recovery call it. When `SUPABASE_SECRET_KEY` and the project URL are set, the adapter is Postgres (`consume_rate_limit`, executable by `service_role` only) and a failed write denies the attempt. Local development without that secret uses an in-memory adapter in the current process. Production without the secret uses a limiter that denies every attempt. No paid rate-limit product is required.
+
+`GET /api/admin/permissions` is the authorization response for clients: 401 when anonymous, 403 when the user is not staff, 200 with the permission list otherwise. Admin pages use the same decisions and `forbidden()` for the 403 page.
+
+Redirect targets pass through `sanitizeRedirectPath`. Values that do not start with a single `/`, or that decode to a protocol or `//`, fall back to `/`.
 
 ## Architecture decisions
 
@@ -29,7 +45,38 @@ Draw the trust boundary and list the controls that keep prices, inventory, roles
 
 **Guest token.** Random secret in an httpOnly cookie. The database stores a hash. Possession of a cart UUID is not enough to read the cart.
 
-## Implementation details
+## What is implemented
+
+Permissions are a fixed map in `apps/web/src/features/auth/permissions.ts`. `permissionsForRoles` is the only function that turns roles into permissions, and it is the only place `admin` receives every permission. Call sites use `canManageProducts`, `canManageOrders`, `canModerateReviews`, `canManageInventory`, and `canManageRoles`. They do not compare role strings.
+
+The same map is repeated in `private.has_permission` so a policy can ask for a permission instead of a role. `private.has_role` treats `admin` as every role. `roles.manage` still requires an actual `admin` row.
+
+| Permission | Roles |
+| --- | --- |
+| `catalog.products.manage` | `catalog_manager`, `admin` |
+| `inventory.manage` | `catalog_manager`, `admin` |
+| `orders.manage` | `order_manager`, `admin` |
+| `orders.read` | `support`, `order_manager`, `admin` |
+| `reviews.moderate` | `support`, `admin` |
+| `roles.manage` | `admin` |
+
+`customer` has none of these. Ownership of a profile is `id = auth.uid()`, not a permission.
+
+Protected pages: the proxy redirects anonymous `/account` and `/admin` requests to login. The account layout repeats that check. The admin layout calls `forbidden()` for a signed-in user who is not staff, so the response is an authorization failure rather than another redirect. Each admin section calls the permission helper again and `forbidden()` on failure. Hiding a nav link is not the check.
+
+`GET /api/admin/permissions` repeats the check and returns 401 or 403. Server Actions call `requireSessionActor()` and then `decideProfileUpdate` or `decideGrantRole`.
+
+Untrusted input:
+
+- Profile updates reject `role` and a `userId` that is not the session user.
+- `parseTrusted` rejects `price`, `total`, `totalRial`, `discount`, and `shippingPrice` before a schema runs.
+- `decideCheckoutIntent` requires a verified session, rejects a client `userId`, and accepts only `cartId`. It does not place an order.
+- Redirect targets must be a single-slash relative path. `//`, schemes, and encoded `//` are dropped.
+- Login, registration, and password recovery are throttled. The limiter is an interface. With a Supabase URL and secret key it calls `consume_rate_limit` and fails closed if that write fails. Local development without the secret key uses an in-memory adapter in this process. `VERCEL_ENV=production` without the secret key denies the attempt. No paid rate-limit service is required.
+
+The secret key is read only from `createSupabaseSecretClient`. Client modules must not mention it.
+
+## Rules that still apply
 
 ### Role map
 

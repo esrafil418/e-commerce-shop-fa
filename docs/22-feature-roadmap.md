@@ -127,7 +127,9 @@ The phases are the body of this document.
 
 **Goal.** Register, verify email, login, logout, recover password, and a profile page.
 
-**Dependencies.** Phase 1, Phase 2 profiles migration.
+**Dependencies.** Phase 1, Phase 2 profiles migration. The identity migration in this repository is the profile and role portion of that dependency. The rest of the catalog schema is still Phase 2.
+
+**Done.** Cookie sessions, auth screens, confirm route, account guard, admin 403, permission helpers, and Vitest coverage for redirects, roles, and rejected mutations. Playwright against a live Supabase project is not installed.
 
 **Tasks.**
 

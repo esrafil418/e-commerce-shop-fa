@@ -11,8 +11,15 @@ import {
 } from "@ecom/ui/components/sheet";
 import { useShellUi } from "@/hooks/use-shell-ui";
 import { siteCopy } from "@/messages/fa";
+import { authCopy } from "@/features/auth/messages";
 
-export function MobileNav() {
+export function MobileNav({
+  signedIn,
+  staff,
+}: {
+  signedIn: boolean;
+  staff: boolean;
+}) {
   const open = useShellUi((state) => state.mobileNavOpen);
   const setOpen = useShellUi((state) => state.setMobileNavOpen);
 
@@ -33,10 +40,26 @@ export function MobileNav() {
         <SheetHeader>
           <SheetTitle>{siteCopy.menuTitle}</SheetTitle>
         </SheetHeader>
-        <nav aria-label={siteCopy.menuTitle}>
+        <nav aria-label={siteCopy.menuTitle} className="flex flex-col gap-3">
           <Link className="text-sm font-medium" href="/" onClick={() => setOpen(false)}>
             {siteCopy.home}
           </Link>
+          <Link
+            className="text-sm font-medium"
+            href={signedIn ? "/account" : "/auth/login"}
+            onClick={() => setOpen(false)}
+          >
+            {signedIn ? authCopy.goToAccount : authCopy.goToLogin}
+          </Link>
+          {staff ? (
+            <Link
+              className="text-sm font-medium"
+              href="/admin"
+              onClick={() => setOpen(false)}
+            >
+              {authCopy.goToAdmin}
+            </Link>
+          ) : null}
         </nav>
       </SheetContent>
     </Sheet>

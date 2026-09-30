@@ -1,10 +1,34 @@
 # 05. Authentication
 
-Status: architectural baseline. Supabase Auth is the identity provider. No auth code exists yet.
+Status: implemented in the app. The identity migration is `supabase/migrations/20260930120000_identity.sql`. Apply it after `supabase init` (there is no `supabase/config.toml` yet) and `pnpm supabase:reset`.
 
 ## Purpose
 
 Define how people register, sign in, recover passwords, verify email, and how the Next.js app keeps a session. Authorization is the next document.
+
+## What is implemented
+
+| Piece | Location |
+| --- | --- |
+| Browser client | `apps/web/src/lib/supabase/client.ts` (`createBrowserClient`) |
+| Server client | `apps/web/src/lib/supabase/server.ts` (`createServerClient`, per request) |
+| Secret client | `apps/web/src/lib/supabase/secret.ts` (`server-only`, no session persistence) |
+| Session refresh | `apps/web/src/proxy.ts` calls `supabase.auth.getClaims()` and copies cookies onto the request and the response |
+| Current user | `apps/web/src/lib/auth/current-user.ts` uses `getUser()`, then reads `user_roles` |
+| Session helper | `apps/web/src/lib/auth/session.ts` |
+| Screens | `/auth/login`, `/auth/register`, `/auth/forgot`, `/auth/update-password`, `/auth/check-email` |
+| Email confirm | `GET /auth/confirm` exchanges `code` or `token_hash` |
+| Account | `/account` redirects anonymous visitors to login |
+| Admin | `/admin` redirects anonymous visitors to login. A signed-in customer hits `forbidden()` (403), not another redirect |
+| API | `GET /api/auth/session` returns 401 or the user id and roles. `GET /api/admin/permissions` returns 401, 403, or the permission list |
+| Signup profile | `supabase/migrations/20260930120000_identity.sql` inserts `profiles` and the `customer` role. `raw_user_meta_data.role` is ignored |
+| Permissions | `apps/web/src/features/auth/permissions.ts`. SQL `private.has_permission` uses the same names |
+
+`getSession()` is not used. Authorization checks call `hasPermission`. The helpers `canManageProducts`, `canManageOrders`, `canModerateReviews`, `canManageInventory`, and `canManageRoles` only call that function.
+
+The proxy refreshes cookies and sends anonymous `/account` and `/admin` page requests to login. It does not decide staff versus customer. The admin layout loads roles and calls `forbidden()` when the user is not staff. Each admin section checks its own permission again.
+
+If the public Supabase variables are empty, the storefront still renders and auth actions return a configuration error. They do not throw during page render.
 
 ## Architecture decisions
 
@@ -32,7 +56,31 @@ The older package `@supabase/auth-helpers-nextjs` is not used.
 
 **Confirm route.** `app/auth/confirm/route.ts` exchanges `token_hash` / `code` for a session and redirects. This is required because the browser client cannot finish every email link by itself in the App Router.
 
-## Implementation details
+## What is implemented
+
+Sessions are httpOnly cookies owned by `@supabase/ssr`. There is one browser client (`lib/supabase/client.ts`), one cookie server client (`lib/supabase/server.ts`), and one secret client (`lib/supabase/secret.ts`) for the service role. Do not add another cookie client.
+
+`src/proxy.ts` calls `refreshSession`. That creates a request-scoped server client, calls `supabase.auth.getClaims()` so the JWT is verified and refreshed, and copies the cookies onto the forwarded request and the response. It also sends anonymous visitors from `/account` and `/admin` to `/auth/login?next=`. It does not decide staff versus customer. When the public Supabase variables are empty, the proxy skips the Auth call and the storefront still boots. Protected pages then behave as signed out.
+
+Server Actions and Route Handlers call `getUser()` through `getCurrentActor` / `readSessionActor`. They do not call `getSession()`. Roles are loaded from `user_roles`. A missing role query yields no staff permissions.
+
+| Flow | Where |
+| --- | --- |
+| Register | `registerAction`. Zod email, password, and name. `signUp` metadata contains `full_name` only. The UI says to check email when Supabase does not return a session. |
+| Confirm email | `GET /auth/confirm` exchanges `code` or `token_hash`. `next` is a relative path. Recovery links land on `/auth/update-password`. |
+| Login | `loginAction`. Wrong email or password produce one message. `next` is sanitized. |
+| Logout | `logoutAction` calls `signOut` and returns home. |
+| Password reset | `requestPasswordResetAction` always shows the same success text. `updatePasswordAction` requires the recovery session. |
+| Account | `(account)/layout.tsx` redirects anonymous visitors to login. The profile form updates `profiles` for `auth.uid()` only. |
+| Admin pages | `app/admin/layout.tsx` redirects anonymous visitors. A signed-in customer hits `forbidden()`, which renders `admin/forbidden.tsx`. Staff without a section permission get the same 403 on that section. |
+| Session API | `GET /api/auth/session` returns 401 or `{ userId, roles, emailConfirmed }`. No access token. |
+| Admin API | `GET /api/admin/permissions` returns 401, 403, or the permission list. |
+
+`requireVerifiedEmail` blocks the checkout intent helper until `email_confirmed_at` is set. Checkout itself is not built yet.
+
+Signup does not accept a role. `private.handle_new_user` inserts `customer` and ignores any role in `raw_user_meta_data`. Direct writes to `user_roles` fail a guard trigger. `grant_role` and `revoke_role` run only after `roles.manage`, which only `admin` has. An admin cannot revoke their own `admin` role.
+
+## Rules that still apply
 
 ### Clients
 
